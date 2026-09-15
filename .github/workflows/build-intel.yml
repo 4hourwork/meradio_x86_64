@@ -1,0 +1,45 @@
+name: Build meradio for Intel Mac
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-intel:
+    runs-on: macos-15-intel
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+
+      - name: Show build environment
+        run: |
+          uname -m
+          sw_vers
+          swift --version
+          xcodebuild -version
+
+      - name: Build meradio
+        run: |
+          chmod +x scripts/build-app.sh
+          ./scripts/build-app.sh release
+
+      - name: Verify Intel binary
+        run: |
+          echo "=== Architecture ==="
+          file meradio.app/Contents/MacOS/meradio
+          echo "=== App Info ==="
+          plutil -p meradio.app/Contents/Info.plist
+
+      - name: Create ZIP
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            meradio.app \
+            meradio-macos15-intel.zip
+
+      - name: Upload Intel app
+        uses: actions/upload-artifact@v7
+        with:
+          name: meradio-macos15-intel
+          path: meradio-macos15-intel.zip
+          if-no-files-found: error
+          retention-days: 30
